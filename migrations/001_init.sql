@@ -1,4 +1,3 @@
--- Enable uuid generation (choose one of these; pgcrypto is simplest)
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TABLE IF NOT EXISTS jobs (
@@ -12,4 +11,3 @@ CREATE TABLE IF NOT EXISTS jobs (
 
 CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
 CREATE INDEX IF NOT EXISTS idx_jobs_company_role ON jobs(company, role);
-
