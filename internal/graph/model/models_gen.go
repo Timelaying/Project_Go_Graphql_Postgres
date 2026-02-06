@@ -2,25 +2,31 @@
 
 package model
 
-type Mutation struct {
+type Job struct {
+	ID        string  `json:"id"`
+	Company   string  `json:"company"`
+	Role      string  `json:"role"`
+	Link      *string `json:"link"`
+	Status    Status  `json:"status"`
+	CreatedAt string  `json:"createdAt"`
 }
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type Mutation struct {
 }
 
 type Query struct {
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
-}
+type Status string
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+const (
+	StatusApplied   Status = "APPLIED"
+	StatusInterview Status = "INTERVIEW"
+	StatusOffer     Status = "OFFER"
+	StatusRejected  Status = "REJECTED"
+)
+
+type StatusCount struct {
+	Status Status `json:"status"`
+	Count  int    `json:"count"`
 }
