@@ -22,3 +22,8 @@ type Job struct {
 	Status    Status
 	CreatedAt time.Time
 }
+
+type StatusCount struct {
+	Status Status
+	Count  int
+}

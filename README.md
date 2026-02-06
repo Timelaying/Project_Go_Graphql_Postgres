@@ -9,7 +9,7 @@ A lightweight job-application tracker built with Go, gqlgen (GraphQL), and Postg
 - Helper package for database connections and SQL migrations.
 - Docker Compose setup for local Postgres + Adminer.
 
-> **Project status**: the GraphQL server is currently scaffolded. The schema and data layer exist, but resolvers are still stubbed and need to be wired to the database before the API is fully functional.
+> **Project status**: the GraphQL server is fully wired to Postgres with validation, demo seed data, and consistent error codes.
 
 ## Tech Stack
 
@@ -41,32 +41,30 @@ A lightweight job-application tracker built with Go, gqlgen (GraphQL), and Postg
 ### 1) Start Postgres (Docker)
 
 ```bash
-docker compose up -d db adminer
+make up
 ```
 
 Adminer is available at `http://localhost:8080` (default). Note that the Go server also defaults to port 8080, so you may want to set `PORT=8081` when running the API locally.
 
-### 2) Apply Migrations
-
-The schema lives in `migrations/001_init.sql`. You can apply it using `psql`:
+### 2) Configure Environment
 
 ```bash
-psql "postgres://postgres:postgres@localhost:5432/jobtracker?sslmode=disable" \
-  -f migrations/001_init.sql
+cp .env.example .env
 ```
 
 ### 3) Run the API Server
 
 ```bash
-PORT=8081 go run server.go
+make run
 ```
 
-- GraphQL Playground: `http://localhost:8081/`
-- GraphQL endpoint: `http://localhost:8081/query`
+- GraphQL Playground: `http://localhost:4000/`
+- GraphQL endpoint: `http://localhost:4000/query`
 
 ## Environment Variables
 
 - `PORT`: HTTP server port (default: `8080`).
+- `DATABASE_URL`: Postgres connection string.
 
 For database connectivity, the helpers in `internal/db` expect a Postgres URL. A common local URL is:
 
@@ -85,6 +83,12 @@ The `jobs` table is created by `migrations/001_init.sql` with these fields:
 - `status` (enum-like text: `APPLIED`, `INTERVIEW`, `OFFER`, `REJECTED`)
 - `created_at` (timestamp)
 
+Stats query example:
+
+```sql
+SELECT status, COUNT(*) FROM jobs GROUP BY status ORDER BY status;
+```
+
 ## GraphQL Schema
 
 The GraphQL schema is defined in `internal/graph/schema.graphqls` and includes:
@@ -93,7 +97,7 @@ The GraphQL schema is defined in `internal/graph/schema.graphqls` and includes:
 - **Mutations**: `createJob`, `updateJobStatus`, `updateJobLink`, `deleteJob`, `seedDemoJobs`
 - **Types**: `Job`, `Status`, `StatusCount`
 
-Once resolvers are implemented, you can use the playground to execute queries like:
+You can use the playground to execute queries like:
 
 ```graphql
 query GetJobs {
@@ -107,11 +111,86 @@ query GetJobs {
 }
 ```
 
+Sample GraphQL operations:
+
+```graphql
+mutation {
+  createJob(company: "Monzo", role: "Backend Engineer", link: "https://example.com") {
+    id
+    company
+    role
+    status
+    createdAt
+  }
+}
+```
+
+```graphql
+query {
+  jobs(status: APPLIED, q: "Engineer") {
+    id
+    company
+    role
+    link
+    status
+    createdAt
+  }
+}
+```
+
+```graphql
+mutation {
+  updateJobStatus(id: "<uuid>", status: INTERVIEW) {
+    id
+    status
+  }
+}
+```
+
+```graphql
+mutation {
+  updateJobLink(id: "<uuid>", link: "https://example.com/job") {
+    id
+    link
+  }
+}
+```
+
+```graphql
+mutation {
+  deleteJob(id: "<uuid>")
+}
+```
+
+```graphql
+mutation {
+  seedDemoJobs
+}
+```
+
+```graphql
+query {
+  statsByStatus {
+    status
+    count
+  }
+}
+```
+
 ## Development Notes
 
 - gqlgen configuration lives in `gqlgen.yml`.
 - Generated code is under `internal/graph/`.
 - The job repository (`internal/jobs/repository.go`) provides CRUD operations against Postgres.
+
+## Definition of Done
+
+- ✅ docker compose up spins Postgres.
+- ✅ App auto-applies `migrations/001_init.sql` on startup.
+- ✅ Playground opens and all operations work (`jobs`, `job`, `createJob`, `updateJobStatus`, `updateJobLink`, `deleteJob`, `seedDemoJobs`, `statsByStatus`).
+- ✅ Filters + search work (`status`, `q`).
+- ✅ Consistent GraphQL error codes for bad input + not found.
+- ✅ README has setup + sample operations.
 
 ## License
 
