@@ -1,7 +1,7 @@
 package main
 
 import (
-	"job-tracker/graph"
+	"context"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +12,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/v2/ast"
+
+	"job-tracker/internal/db"
+	"job-tracker/internal/graph"
+	"job-tracker/internal/jobs"
 )
 
 const defaultPort = "8080"
@@ -22,7 +26,28 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	ctx := context.Background()
+
+	databaseURL := os.Getenv("DATABASE_URL")
+	if databaseURL == "" {
+		log.Fatal("DATABASE_URL environment variable is required")
+	}
+
+	pool, err := db.NewPool(ctx, databaseURL)
+	if err != nil {
+		log.Fatalf("failed to connect to database: %v", err)
+	}
+	defer pool.Close()
+
+	if err := db.ApplyMigrations(ctx, pool, "migrations/001_init.sql"); err != nil {
+		log.Printf("migration warning (table may already exist): %v", err)
+	}
+
+	jobRepo := jobs.NewRepo(pool)
+
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{
+		Resolvers: &graph.Resolver{Jobs: jobRepo},
+	}))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
