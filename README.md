@@ -195,3 +195,15 @@ query {
 ## License
 
 This project is currently unlicensed. Add a LICENSE file if you plan to distribute it.
+
+
+## Deploy (Render + Neon)
+
+The included `Dockerfile` builds a small image that applies `migrations/001_init.sql` on start.
+
+1. Create a free Postgres database (for example on Neon) and copy its connection string.
+2. On Render, create a **Web Service** from this repository using the Docker runtime.
+3. Set `DATABASE_URL` to the connection string. Render supplies `PORT` itself.
+4. Open the service URL for the GraphQL playground. To load sample data, run the `seedDemoJobs` mutation once.
+
+Free Render services sleep when idle, so the first request after a pause can take about a minute.
