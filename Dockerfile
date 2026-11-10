@@ -1,8 +1,8 @@
 FROM golang:1.25-alpine AS build
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
 COPY . .
+# go.mod in the repo predates the pgx dependency, so resolve it at build time.
+RUN go mod tidy && go mod download
 RUN CGO_ENABLED=0 go build -o /out/server .
 
 FROM alpine:3.20
