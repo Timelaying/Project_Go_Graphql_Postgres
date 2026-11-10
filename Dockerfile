@@ -4,7 +4,7 @@ COPY . .
 # go.mod in the repo predates the pgx dependency, so resolve it at build time.
 RUN go mod tidy && go mod download
 # The committed generated.go does not compile; regenerate it from the schema.
-RUN go run github.com/99designs/gqlgen generate
+RUN go get github.com/99designs/gqlgen@v0.17.86 && go run github.com/99designs/gqlgen generate
 RUN CGO_ENABLED=0 go build -o /out/server .
 
 FROM alpine:3.20
